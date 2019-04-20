@@ -16,6 +16,10 @@ public class Water : MonoBehaviour {
     [SerializeField]
     private List<Rigidbody> rbList = new List<Rigidbody>();
     [SerializeField]
+    private List<FloatyObject> foList = new List<FloatyObject>();
+    [SerializeField]
+    private List<Transform> tList = new List<Transform>();
+    [SerializeField]
     private List<Vector3> v3List = new List<Vector3>();
     [SerializeField]
     private List<Vector3> insideme = new List<Vector3>();
@@ -45,12 +49,32 @@ public class Water : MonoBehaviour {
         size = self.size;
     }
 
-    private Vector3 CalculateCenterpointOfRigidbody(Rigidbody rb)
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.GetComponent<FloatyObject>())
+        {
+            rbList.Add(other.GetComponent<Rigidbody>());
+            foList.Add(other.GetComponent<FloatyObject>());
+            tList.Add(other.transform);
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        //other.GetComponent<Rigidbody>().ResetCenterOfMass();
+
+        if(other.GetComponent<FloatyObject>())
+        {
+            rbList.Remove(other.GetComponent<Rigidbody>());
+            foList.Remove(other.GetComponent<FloatyObject>());
+            tList.Remove(other.transform);
+        }
+    }
+
+    private Vector3 CalculateCenterpointOfRigidbody(Rigidbody rb, FloatyObject fo, Transform t)
     {
         //Debug.Log("Doing calsdkfja;sldfkj;aljfd");
-        Transform t = rb.gameObject.transform;
 
-        FloatyObject fo = rb.gameObject.GetComponent<FloatyObject>();
         //get this to return a vector3 at world pos
 
         //add all x values
@@ -66,17 +90,6 @@ public class Water : MonoBehaviour {
         {
             v3List.Add(fo.points[i].position);
         }
-
-        
-        //Instantiate(visualiser, v3List[0], Quaternion.identity, gameObject.transform);        
-        //Instantiate(visualiser, v3List[1], Quaternion.identity, gameObject.transform);        
-        //Instantiate(visualiser, v3List[2], Quaternion.identity, gameObject.transform);        
-        //Instantiate(visualiser, v3List[3], Quaternion.identity, gameObject.transform);        
-        //Instantiate(visualiser, v3List[4], Quaternion.identity, gameObject.transform);        
-        //Instantiate(visualiser, v3List[5], Quaternion.identity, gameObject.transform);        
-        //Instantiate(visualiser, v3List[6], Quaternion.identity, gameObject.transform);        
-        //Instantiate(visualiser, v3List[7], Quaternion.identity, gameObject.transform);
-
         for (int i = 0; i < v3List.Count; i++)
         {
             if (self.bounds.Contains(v3List[i]))
@@ -85,7 +98,6 @@ public class Water : MonoBehaviour {
                 //Instantiate(visualiser, v3List[i], Quaternion.identity, gameObject.transform);
             }
         }
-
         insideMeLength = insideme.Count;
 
         //get length of list
@@ -95,7 +107,6 @@ public class Water : MonoBehaviour {
             y += v3.y;
             z += v3.z;
         }
-
         Vector3 result = new Vector3(x / insideMeLength, y / insideMeLength, z / insideMeLength);
         //GameObject clone = Instantiate(visualiser, result, Quaternion.identity, gameObject.transform);
         //clone.transform.parent = null;
@@ -111,45 +122,28 @@ public class Water : MonoBehaviour {
         Gizmos.DrawCube(new Vector3(gizPos.x, gizPos.y + (viscocitySize.y/2),gizPos.z), viscocitySize);
     }
 
-    private void OnTriggerEnter(Collider other)
-    {
-        rbList.Add(other.GetComponent<Rigidbody>());
-    }
 
-    private void OnTriggerExit(Collider other)
-    {
-        //other.GetComponent<Rigidbody>().ResetCenterOfMass();
-        rbList.Remove(other.GetComponent<Rigidbody>());
-    }
 
     private void FixedUpdate()
     {
-        foreach(Rigidbody rb in rbList)
+        for(int i = 0; i < rbList.Count; i++)
         {
-            if (rb.gameObject.GetComponent<FloatyObject>())
-            {
-                Vector3 forcePos =  CalculateCenterpointOfRigidbody(rb);
+            Debug.Log(i);
+            Vector3 forcePos =  CalculateCenterpointOfRigidbody(rbList[i], foList[i], tList[i]);
+            gizPos = forcePos;
+            
+            float depth = Mathf.Abs(transform.position.y - tList[i].position.y);
+            pressure = flotation * (depth * depthStrength);
+            Debug.Log("depth= " + depth);
+            Debug.Log("pressure = " + pressure);
+            //Flotation: pushes object up out of water
+            rbList[i].AddForceAtPosition(Vector3.up * pressure, forcePos, ForceMode.Acceleration);
 
-                gizPos = forcePos;
-                float depth = Mathf.Abs(transform.position.y - rb.gameObject.transform.position.y);
-                pressure = flotation * (depth * depthStrength);
-                Debug.Log("depth= " + depth);
-                Debug.Log("pressure = " + pressure);
-                //Flotation: pushes object up out of water
-                rb.AddForceAtPosition(Vector3.up * pressure, forcePos, ForceMode.Acceleration);
-
-                //rb.AddForce(Vector3.up * flotation);
-                //Drag: adds force in opposite direction of travel at the level of viscocity
-                //rb.AddForceAtPosition(rb.velocity *-1 * viscocity, forcePos);
-                viscocitySize = rb.velocity * -1 * viscocity * 10;
-                rb.AddForceAtPosition(rb.velocity * -1 * viscocity, forcePos, ForceMode.Acceleration);
-                
-            }
+            //rb.AddForce(Vector3.up * flotation);
+            //Drag: adds force in opposite direction of travel at the level of viscocity
+            //rb.AddForceAtPosition(rb.velocity *-1 * viscocity, forcePos);
+            viscocitySize = rbList[i].velocity * -1 * viscocity * 10;
+            rbList[i].AddForceAtPosition(rbList[i].velocity * -1 * viscocity, forcePos, ForceMode.Acceleration);
         }
     }
-
-    // Update is called once per frame
-    void Update () {
-		
-	}
 }
