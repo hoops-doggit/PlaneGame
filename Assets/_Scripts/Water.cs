@@ -71,11 +71,15 @@ public class Water : MonoBehaviour {
         }
     }
 
-    private Vector3 CalculateCenterpointOfRigidbody(Rigidbody rb, FloatyObject fo, Transform t)
+    private Vector3 CalculateCenterpointOfRigidbody(int zx)
     {
         //Debug.Log("Doing calsdkfja;sldfkj;aljfd");
 
         //get this to return a vector3 at world pos
+
+        Rigidbody rb = rbList[zx];
+        FloatyObject fo = foList[zx];
+        Transform t = tList[zx];
 
         //add all x values
         v3List.Clear();
@@ -95,7 +99,10 @@ public class Water : MonoBehaviour {
             if (self.bounds.Contains(v3List[i]))
             {
                 insideme.Add(v3List[i]);
-                //Instantiate(visualiser, v3List[i], Quaternion.identity, gameObject.transform);
+                //instantiates a shere 
+                //GameObject vis = Instantiate(visualiser, v3List[i], Quaternion.identity, gameObject.transform);
+                //vis.transform.SetParent(null);
+                //vis.transform.localScale = new Vector3(1, 1, 1);
             }
         }
         insideMeLength = insideme.Count;
@@ -120,6 +127,8 @@ public class Water : MonoBehaviour {
         Gizmos.DrawSphere(gizPos, gizSize);
         Gizmos.color = viscocityColour;
         Gizmos.DrawCube(new Vector3(gizPos.x, gizPos.y + (viscocitySize.y/2),gizPos.z), viscocitySize);
+        Gizmos.DrawLine(new Vector3(gizPos.x, gizPos.y, gizPos.z), viscocitySize);
+        
     }
 
 
@@ -128,22 +137,22 @@ public class Water : MonoBehaviour {
     {
         for(int i = 0; i < rbList.Count; i++)
         {
-            Debug.Log(i);
-            Vector3 forcePos =  CalculateCenterpointOfRigidbody(rbList[i], foList[i], tList[i]);
+            Vector3 forcePos =  CalculateCenterpointOfRigidbody(i);
             gizPos = forcePos;
             
             float depth = Mathf.Abs(transform.position.y - tList[i].position.y);
             pressure = flotation * (depth * depthStrength);
-            Debug.Log("depth= " + depth);
-            Debug.Log("pressure = " + pressure);
+            //debug.Logs in fixed update kills performance
+            //Debug.Log("depth= " + depth);
+            //Debug.Log("pressure = " + pressure);
             //Flotation: pushes object up out of water
-            rbList[i].AddForceAtPosition(Vector3.up * pressure, forcePos, ForceMode.Acceleration);
+            rbList[i].AddForceAtPosition(Vector3.up * pressure, forcePos, ForceMode.Force);
 
             //rb.AddForce(Vector3.up * flotation);
             //Drag: adds force in opposite direction of travel at the level of viscocity
             //rb.AddForceAtPosition(rb.velocity *-1 * viscocity, forcePos);
             viscocitySize = rbList[i].velocity * -1 * viscocity * 10;
-            rbList[i].AddForceAtPosition(rbList[i].velocity * -1 * viscocity, forcePos, ForceMode.Acceleration);
+            rbList[i].AddForceAtPosition(rbList[i].velocity * -1 * viscocity, forcePos, ForceMode.Force);
         }
     }
 }

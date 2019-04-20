@@ -27,6 +27,11 @@ public class MovyObject : MonoBehaviour {
         }
     }
 
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = new Color(1, 0, 0);
+        //Gizmos.DrawLine(transform.position, transform.forward*5);
+    }
 
 
 
