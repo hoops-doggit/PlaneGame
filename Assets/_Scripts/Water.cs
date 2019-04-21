@@ -8,10 +8,18 @@ public class Water : MonoBehaviour {
     [Header("Water Stats")]
     public float flotation;
     public float viscocity;
-    
     public float depthStrength;
+    public float minHeight;
+    public float depthMinValue;
+    public Vector3 actualPosition;
+    public Vector3 actualVelocity;
+
     [SerializeField]
     private float pressure;
+    [SerializeField]
+    private float visPressure;
+    [SerializeField]
+    private float depth;
 
     [SerializeField]
     private List<Rigidbody> rbList = new List<Rigidbody>();
@@ -124,11 +132,10 @@ public class Water : MonoBehaviour {
     private void OnDrawGizmos()
     {
         Gizmos.color = currentCenterPointCol;
-        Gizmos.DrawSphere(gizPos, gizSize);
+        //Gizmos.DrawSphere(gizPos, gizSize);
         Gizmos.color = viscocityColour;
-        Gizmos.DrawCube(new Vector3(gizPos.x, gizPos.y + (viscocitySize.y/2),gizPos.z), viscocitySize);
-        Gizmos.DrawLine(new Vector3(gizPos.x, gizPos.y, gizPos.z), viscocitySize);
-        
+        //Gizmos.DrawCube(new Vector3(gizPos.x, gizPos.y + (viscocitySize.y/2),gizPos.z), viscocitySize);
+        //Gizmos.DrawLine(new Vector3(gizPos.x, gizPos.y, gizPos.z), viscocitySize);        
     }
 
 
@@ -137,22 +144,47 @@ public class Water : MonoBehaviour {
     {
         for(int i = 0; i < rbList.Count; i++)
         {
-            Vector3 forcePos =  CalculateCenterpointOfRigidbody(i);
-            gizPos = forcePos;
-            
-            float depth = Mathf.Abs(transform.position.y - tList[i].position.y);
-            pressure = flotation * (depth * depthStrength);
+            Vector3 underWaterCenterpoint =  CalculateCenterpointOfRigidbody(i);
+            gizPos = underWaterCenterpoint;
+            actualPosition = underWaterCenterpoint;
+            //depth = transform.position.y - tList[i].position.y;
+            depth = Mathf.Abs( transform.position.y - underWaterCenterpoint.y);
+
+            //old pressure
+            pressure = flotation * (depth / depthStrength);
+
+            //too simple new pressure
+            //if(underWaterCenterpoint.y > -5)
+            //{
+            //    pressure = flotation / 2f;
+            //}
+            //else
+            //{
+            //    pressure = flotation;
+            //}
+
+
+            visPressure = viscocity * (depth / depthStrength);
             //debug.Logs in fixed update kills performance
             //Debug.Log("depth= " + depth);
             //Debug.Log("pressure = " + pressure);
-            //Flotation: pushes object up out of water
-            rbList[i].AddForceAtPosition(Vector3.up * pressure, forcePos, ForceMode.Force);
 
+            //Flotation: pushes object up out of water
             //rb.AddForce(Vector3.up * flotation);
+            rbList[i].AddForceAtPosition(Vector3.up * pressure, underWaterCenterpoint, ForceMode.Impulse);
+
+            
+            
+
             //Drag: adds force in opposite direction of travel at the level of viscocity
             //rb.AddForceAtPosition(rb.velocity *-1 * viscocity, forcePos);
-            viscocitySize = rbList[i].velocity * -1 * viscocity * 10;
-            rbList[i].AddForceAtPosition(rbList[i].velocity * -1 * viscocity, forcePos, ForceMode.Force);
+
+            rbList[i].AddForceAtPosition(rbList[i].GetPointVelocity(underWaterCenterpoint) * -1 * viscocity, underWaterCenterpoint, ForceMode.Impulse);
+            //rbList[i].AddTorque(rbList[i].angularVelocity * -1 * viscocity, underWaterCenterpoint, ForceMode.Impulse);
+            actualVelocity= rbList[i].velocity;
+
+            //For Debugging
+            //viscocitySize = rbList[i].velocity * -1 * visPressure * 10;
         }
     }
 }
