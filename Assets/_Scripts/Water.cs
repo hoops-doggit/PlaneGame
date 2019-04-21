@@ -11,8 +11,10 @@ public class Water : MonoBehaviour {
     public float depthStrength;
     public float minHeight;
     public float depthMinValue;
+    public float width;
     public Vector3 actualPosition;
     public Vector3 actualVelocity;
+    
 
     [SerializeField]
     private float pressure;
@@ -162,7 +164,27 @@ public class Water : MonoBehaviour {
             //{
             //    pressure = flotation;
             //}
+            Vector3 v1 = Vector3.Cross(rbList[i].velocity, Vector3.up);
+            Vector3 v2 = Vector3.Cross(rbList[i].velocity, v1);
+            Vector3 pointOutFront = rbList[i].GetComponent<Transform>().position + (rbList[i].velocity.normalized * 40);
+            RaycastHit hit;
+            for (float x = -width; x < width; x += 1)
+            {
+                for (float y = -width; y < width; y += 1)
+                {
+                    Vector3 start = pointOutFront + (v1 * x) + (v2 * y);
+                    if (Physics.Raycast(start, -rbList[i].GetComponent<Transform>().position, out hit, 40))
+                    {
+                        Debug.DrawRay(start, -rbList[i].velocity.normalized * hit.distance, Color.red);
 
+                    }
+                    else
+                    {
+                        Debug.DrawRay(start, -rbList[i].velocity.normalized * hit.distance, Color.yellow);
+                    }
+                    
+                }
+            }
 
             visPressure = viscocity * (depth / depthStrength);
             //debug.Logs in fixed update kills performance
