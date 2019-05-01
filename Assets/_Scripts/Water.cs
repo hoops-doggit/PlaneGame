@@ -164,25 +164,41 @@ public class Water : MonoBehaviour {
             //{
             //    pressure = flotation;
             //}
+
+            ///start raycasting
             Vector3 v1 = Vector3.Cross(rbList[i].velocity, Vector3.up);
             Vector3 v2 = Vector3.Cross(rbList[i].velocity, v1);
             Vector3 pointOutFront = rbList[i].GetComponent<Transform>().position + (rbList[i].velocity.normalized * 40);
+
+
+
+
+
+            Debug.DrawLine(pointOutFront, v1.normalized * width + pointOutFront, Color.blue);
+            Debug.DrawLine(pointOutFront, -v1.normalized * width + pointOutFront, Color.blue);
+
+
+            Debug.DrawLine(pointOutFront, v2.normalized * width + pointOutFront, Color.green);
+            Debug.DrawLine(pointOutFront, -v2.normalized * width + pointOutFront, Color.green);
+
+
+
+
             RaycastHit hit;
+
             for (float x = -width; x < width; x += 1)
             {
                 for (float y = -width; y < width; y += 1)
                 {
-                    Vector3 start = pointOutFront + (v1 * x) + (v2 * y);
-                    if (Physics.Raycast(start, -rbList[i].GetComponent<Transform>().position, out hit, 40))
+                    Vector3 start = pointOutFront + (v1.normalized * x) + (v2.normalized * y);
+                    if (Physics.Raycast(start, -rbList[i].velocity.normalized, out hit, 40))
                     {
                         Debug.DrawRay(start, -rbList[i].velocity.normalized * hit.distance, Color.red);
-
                     }
                     else
                     {
-                        Debug.DrawRay(start, -rbList[i].velocity.normalized * hit.distance, Color.yellow);
-                    }
-                    
+                        Debug.DrawRay(start, -rbList[i].velocity.normalized, Color.yellow);
+                    }                    
                 }
             }
 
