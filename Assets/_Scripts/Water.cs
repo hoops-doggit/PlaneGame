@@ -193,12 +193,34 @@ public class Water : MonoBehaviour {
                     Vector3 start = pointOutFront + (v1.normalized * x) + (v2.normalized * y);
                     if (Physics.Raycast(start, -rbList[i].velocity.normalized, out hit, 40))
                     {
+                        rbList[i].AddForceAtPosition(rbList[i].GetPointVelocity(hit.point) * -1 * viscocity, hit.point, ForceMode.Force);
                         Debug.DrawRay(start, -rbList[i].velocity.normalized * hit.distance, Color.red);
                     }
                     else
                     {
                         Debug.DrawRay(start, -rbList[i].velocity.normalized, Color.yellow);
                     }                    
+                }
+            }
+
+            //flotation
+            for (float x = -width; x < width; x += 1)
+            {
+                for (float y = -width; y < width; y += 1)
+                {
+                    Vector3 start = pointOutFront + (v1.normalized * x) + (v2.normalized * y);
+                    if (start.y < 0)
+                    {
+                        if (Physics.Raycast(start, -rbList[i].velocity.normalized, out hit, 40))
+                        {
+                            rbList[i].AddForceAtPosition(rbList[i].GetPointVelocity(hit.point) * -1 * viscocity, hit.point, ForceMode.Force);
+                            Debug.DrawRay(start, -rbList[i].velocity.normalized * hit.distance, Color.red);
+                        }
+                        else
+                        {
+                            Debug.DrawRay(start, -rbList[i].velocity.normalized, Color.yellow);
+                        }
+                    }
                 }
             }
 
@@ -217,7 +239,9 @@ public class Water : MonoBehaviour {
             //Drag: adds force in opposite direction of travel at the level of viscocity
             //rb.AddForceAtPosition(rb.velocity *-1 * viscocity, forcePos);
 
-            rbList[i].AddForceAtPosition(rbList[i].GetPointVelocity(underWaterCenterpoint) * -1 * viscocity, underWaterCenterpoint, ForceMode.Impulse);
+
+            //this was viscosity, now it's done with rays;
+            //rbList[i].AddForceAtPosition(rbList[i].GetPointVelocity(underWaterCenterpoint) * -1 * viscocity, underWaterCenterpoint, ForceMode.Impulse);
             //rbList[i].AddTorque(rbList[i].angularVelocity * -1 * viscocity, underWaterCenterpoint, ForceMode.Impulse);
             actualVelocity= rbList[i].velocity;
 

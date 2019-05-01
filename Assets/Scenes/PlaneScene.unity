@@ -18184,7 +18184,7 @@ GameObject:
   - component: {fileID: 1645078754}
   - component: {fileID: 1645078753}
   - component: {fileID: 1645078757}
-  m_Layer: 4
+  m_Layer: 2
   m_Name: Water
   m_TagString: Water
   m_Icon: {fileID: 0}
@@ -18269,8 +18269,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a8cea69f7af80ed4596abdd054a41b93, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  flotation: 20
-  viscocity: 0.01
+  flotation: 40
+  viscocity: 0.0002
   depthStrength: 1000
   minHeight: 4
   depthMinValue: 2
