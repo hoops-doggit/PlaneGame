@@ -7,10 +7,10 @@ public class Water : MonoBehaviour {
 
     [Header("Water Stats")]
     public float flotation;
+    public float minFlotation;
     public float viscocity;
     public float depthStrength;
     public float minHeight;
-    public float depthMinValue;
     public float width;
     public float depthToCheck;
     public float distanceBetweenRays;
@@ -167,7 +167,7 @@ public class Water : MonoBehaviour {
             //Debug.DrawLine(pointOutFront, v2.normalized * width + pointOutFront, Color.green);
             //Debug.DrawLine(pointOutFront, -v2.normalized * width + pointOutFront, Color.green);
 
-                        
+
             RaycastHit hit;
             for (float x = -width; x < width; x += distanceBetweenRays)
             {
@@ -188,16 +188,21 @@ public class Water : MonoBehaviour {
             #endregion
 
 
-            #region flotation/bouyancy
-            depth = Mathf.Abs(transform.position.y - underWaterCenterpoint.y);
-            pressure = flotation * (depth / depthStrength);
+            Vector3 v3 = Vector3.Cross(rbList[i].velocity, Vector3.up);
+            Vector3 v4 = Vector3.Cross(rbList[i].velocity, v3);
+
+            Vector3 pointBelow = underWaterCenterpoint - new Vector3(0, depthToCheck, 0);
+
+        #region flotation/bouyancy
+        depth = transform.position.y - underWaterCenterpoint.y;
+            pressure = flotation * (depth / depthStrength) + minFlotation;
             RaycastHit flotationHit;            
 
             for (float x = -width*2; x < width*2; x += distanceBetweenRays)
             {
                 for (float y = -width*2; y < width*2; y += distanceBetweenRays)
                 {
-                    Vector3 start = (underWaterCenterpoint - new Vector3(0, depthToCheck, 0)) + (v1.normalized * x) + (v2.normalized * y);
+                    Vector3 start = pointBelow + (Vector3.left * x) + (Vector3.forward * y);
                     //Debug.DrawLine(start, start - new Vector3(0,10,0));
                     
                     if (Physics.Raycast(start, Vector3.up, out flotationHit, depthToCheck+width))
