@@ -12,6 +12,8 @@ public class Water : MonoBehaviour {
     public float minHeight;
     public float depthMinValue;
     public float width;
+    public float depthToCheck;
+    public float distanceBetweenRays;
     public Vector3 actualPosition;
     public Vector3 actualVelocity;
     
@@ -150,79 +152,70 @@ public class Water : MonoBehaviour {
             gizPos = underWaterCenterpoint;
             actualPosition = underWaterCenterpoint;
             //depth = transform.position.y - tList[i].position.y;
-            depth = Mathf.Abs( transform.position.y - underWaterCenterpoint.y);
-
-            //old pressure
-            pressure = flotation * (depth / depthStrength);
-
-            //too simple new pressure
-            //if(underWaterCenterpoint.y > -5)
-            //{
-            //    pressure = flotation / 2f;
-            //}
-            //else
-            //{
-            //    pressure = flotation;
-            //}
-
+            
+            #region viscocity
             ///start raycasting
             Vector3 v1 = Vector3.Cross(rbList[i].velocity, Vector3.up);
             Vector3 v2 = Vector3.Cross(rbList[i].velocity, v1);
             Vector3 pointOutFront = rbList[i].GetComponent<Transform>().position + (rbList[i].velocity.normalized * 40);
 
 
+            //Debug.DrawLine(pointOutFront, v1.normalized * width + pointOutFront, Color.blue);
+            //Debug.DrawLine(pointOutFront, -v1.normalized * width + pointOutFront, Color.blue);
 
 
+            //Debug.DrawLine(pointOutFront, v2.normalized * width + pointOutFront, Color.green);
+            //Debug.DrawLine(pointOutFront, -v2.normalized * width + pointOutFront, Color.green);
 
-            Debug.DrawLine(pointOutFront, v1.normalized * width + pointOutFront, Color.blue);
-            Debug.DrawLine(pointOutFront, -v1.normalized * width + pointOutFront, Color.blue);
-
-
-            Debug.DrawLine(pointOutFront, v2.normalized * width + pointOutFront, Color.green);
-            Debug.DrawLine(pointOutFront, -v2.normalized * width + pointOutFront, Color.green);
-
-
-
-
+                        
             RaycastHit hit;
-
-            for (float x = -width; x < width; x += 1)
+            for (float x = -width; x < width; x += distanceBetweenRays)
             {
-                for (float y = -width; y < width; y += 1)
+                for (float y = -width; y < width; y += distanceBetweenRays)
                 {
                     Vector3 start = pointOutFront + (v1.normalized * x) + (v2.normalized * y);
                     if (Physics.Raycast(start, -rbList[i].velocity.normalized, out hit, 40))
                     {
                         rbList[i].AddForceAtPosition(rbList[i].GetPointVelocity(hit.point) * -1 * viscocity, hit.point, ForceMode.Force);
-                        Debug.DrawRay(start, -rbList[i].velocity.normalized * hit.distance, Color.red);
+                        //Debug.DrawRay(start, -rbList[i].velocity.normalized * hit.distance, Color.red);
                     }
                     else
                     {
-                        Debug.DrawRay(start, -rbList[i].velocity.normalized, Color.yellow);
+                        //Debug.DrawRay(start, -rbList[i].velocity.normalized, Color.yellow);
                     }                    
                 }
             }
+            #endregion
 
-            //flotation
-            for (float x = -width; x < width; x += 1)
+
+            #region flotation/bouyancy
+            depth = Mathf.Abs(transform.position.y - underWaterCenterpoint.y);
+            pressure = flotation * (depth / depthStrength);
+            RaycastHit flotationHit;            
+
+            for (float x = -width*2; x < width*2; x += distanceBetweenRays)
             {
-                for (float y = -width; y < width; y += 1)
+                for (float y = -width*2; y < width*2; y += distanceBetweenRays)
                 {
-                    Vector3 start = pointOutFront + (v1.normalized * x) + (v2.normalized * y);
-                    if (start.y < 0)
+                    Vector3 start = (underWaterCenterpoint - new Vector3(0, depthToCheck, 0)) + (v1.normalized * x) + (v2.normalized * y);
+                    //Debug.DrawLine(start, start - new Vector3(0,10,0));
+                    
+                    if (Physics.Raycast(start, Vector3.up, out flotationHit, depthToCheck+width))
                     {
-                        if (Physics.Raycast(start, -rbList[i].velocity.normalized, out hit, 40))
+                        if (flotationHit.point.y < gameObject.transform.position.y)
                         {
-                            rbList[i].AddForceAtPosition(rbList[i].GetPointVelocity(hit.point) * -1 * viscocity, hit.point, ForceMode.Force);
-                            Debug.DrawRay(start, -rbList[i].velocity.normalized * hit.distance, Color.red);
-                        }
-                        else
-                        {
-                            Debug.DrawRay(start, -rbList[i].velocity.normalized, Color.yellow);
+                            rbList[i].AddForceAtPosition(Vector3.up * pressure, flotationHit.point, ForceMode.Force);
+                            //Debug.DrawRay(start, Vector3.up * flotationHit.distance, Color.cyan);
                         }
                     }
+                    else
+                    {
+                        //Debug.DrawRay(start, Vector3.up, Color.yellow);
+                    }
+                    
                 }
             }
+            #endregion
 
             visPressure = viscocity * (depth / depthStrength);
             //debug.Logs in fixed update kills performance
@@ -231,7 +224,9 @@ public class Water : MonoBehaviour {
 
             //Flotation: pushes object up out of water
             //rb.AddForce(Vector3.up * flotation);
-            rbList[i].AddForceAtPosition(Vector3.up * pressure, underWaterCenterpoint, ForceMode.Impulse);
+
+            //latest velocity before test:
+            //rbList[i].AddForceAtPosition(Vector3.up * pressure, underWaterCenterpoint, ForceMode.Impulse);
 
             
             
