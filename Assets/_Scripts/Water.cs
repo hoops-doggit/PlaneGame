@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 public class Water : MonoBehaviour {
-
+    public bool debugRays;
     [Header("Water Stats")]
     public float flotation;
     public float minFlotation;
@@ -16,6 +16,7 @@ public class Water : MonoBehaviour {
     public float distanceBetweenRays;
     public Vector3 actualPosition;
     public Vector3 actualVelocity;
+    
     
 
     [SerializeField]
@@ -159,13 +160,15 @@ public class Water : MonoBehaviour {
             Vector3 v2 = Vector3.Cross(rbList[i].velocity, v1);
             Vector3 pointOutFront = rbList[i].GetComponent<Transform>().position + (rbList[i].velocity.normalized * 40);
 
+            if (debugRays)
+            {
+                Debug.DrawLine(pointOutFront, v1.normalized * width + pointOutFront, Color.blue);
+                Debug.DrawLine(pointOutFront, -v1.normalized * width + pointOutFront, Color.blue);
+                Debug.DrawLine(pointOutFront, v2.normalized * width + pointOutFront, Color.green);
+                Debug.DrawLine(pointOutFront, -v2.normalized * width + pointOutFront, Color.green);
+            }
 
-            //Debug.DrawLine(pointOutFront, v1.normalized * width + pointOutFront, Color.blue);
-            //Debug.DrawLine(pointOutFront, -v1.normalized * width + pointOutFront, Color.blue);
 
-
-            //Debug.DrawLine(pointOutFront, v2.normalized * width + pointOutFront, Color.green);
-            //Debug.DrawLine(pointOutFront, -v2.normalized * width + pointOutFront, Color.green);
 
 
             RaycastHit hit;
@@ -177,12 +180,19 @@ public class Water : MonoBehaviour {
                     if (Physics.Raycast(start, -rbList[i].velocity.normalized, out hit, 40))
                     {
                         rbList[i].AddForceAtPosition(rbList[i].GetPointVelocity(hit.point) * -1 * viscocity, hit.point, ForceMode.Force);
-                        //Debug.DrawRay(start, -rbList[i].velocity.normalized * hit.distance, Color.red);
+                        if (debugRays)
+                        {
+                            Debug.DrawRay(start, -rbList[i].velocity.normalized * hit.distance, Color.red);
+                        }
+
                     }
                     else
                     {
-                        //Debug.DrawRay(start, -rbList[i].velocity.normalized, Color.yellow);
-                    }                    
+                        if (debugRays)
+                        {
+                            Debug.DrawRay(start, -rbList[i].velocity.normalized, Color.yellow);
+                        }
+                    }
                 }
             }
             #endregion
@@ -191,10 +201,11 @@ public class Water : MonoBehaviour {
             Vector3 v3 = Vector3.Cross(rbList[i].velocity, Vector3.up);
             Vector3 v4 = Vector3.Cross(rbList[i].velocity, v3);
 
-            Vector3 pointBelow = underWaterCenterpoint - new Vector3(0, depthToCheck, 0);
+            //Vector3 pointBelow = underWaterCenterpoint - new Vector3(0, depthToCheck, 0);
+            Vector3 pointBelow = rbList[i].transform.position + (Vector3.down * depthToCheck);
 
         #region flotation/bouyancy
-        depth = transform.position.y - underWaterCenterpoint.y;
+            depth = transform.position.y - underWaterCenterpoint.y;
             pressure = flotation * (depth / depthStrength) + minFlotation;
             RaycastHit flotationHit;            
 
@@ -203,19 +214,29 @@ public class Water : MonoBehaviour {
                 for (float y = -width*2; y < width*2; y += distanceBetweenRays)
                 {
                     Vector3 start = pointBelow + (Vector3.left * x) + (Vector3.forward * y);
-                    //Debug.DrawLine(start, start - new Vector3(0,10,0));
-                    
-                    if (Physics.Raycast(start, Vector3.up, out flotationHit, depthToCheck+width))
+                    if (debugRays)
+                    {
+                        Debug.DrawLine(start, start - new Vector3(0,10,0));
+                    }
+
+                    if (Physics.Raycast(start, Vector3.up, out flotationHit, depthToCheck + width))
                     {
                         if (flotationHit.point.y < gameObject.transform.position.y)
                         {
                             rbList[i].AddForceAtPosition(Vector3.up * pressure, flotationHit.point, ForceMode.Force);
-                            //Debug.DrawRay(start, Vector3.up * flotationHit.distance, Color.cyan);
+
+                            if (debugRays)
+                            {
+                                Debug.DrawRay(start, Vector3.up * flotationHit.distance, Color.cyan);
+                            }
                         }
                     }
                     else
                     {
-                        //Debug.DrawRay(start, Vector3.up, Color.yellow);
+                        if (debugRays)
+                        {
+                            Debug.DrawRay(start, Vector3.up, Color.yellow);
+                        }
                     }
                     
                 }
