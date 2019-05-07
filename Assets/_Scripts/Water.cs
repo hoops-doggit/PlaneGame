@@ -5,6 +5,7 @@ using UnityEngine.UI;
 
 public class Water : MonoBehaviour {
     public bool debugRays;
+    public bool viscocityRayMethod;
     [Header("Water Stats")]
     public float flotation;
     public float minFlotation;
@@ -13,7 +14,8 @@ public class Water : MonoBehaviour {
     public float minHeight;
     public float width;
     public float depthToCheck;
-    public float distanceBetweenRays;
+    public float distanceBetweenDepthRays;
+    public float distanceBetweenViscocityRays;
     public Vector3 actualPosition;
     public Vector3 actualVelocity;
     
@@ -148,14 +150,85 @@ public class Water : MonoBehaviour {
     private void FixedUpdate()
     {
         for(int i = 0; i < rbList.Count; i++)
+        {            
+
+            Collider rbCollider = rbList[i].GetComponent<Collider>();
+            ApplyViscocity(i);
+            ApplyFlotation(i, rbCollider);
+
+            //visPressure = viscocity * (depth / depthStrength);
+            //actualVelocity = rbList[i].velocity;
+
+
+        }
+    }
+
+    private void ApplyFlotation(int i, Collider rbCollider)
+    {
+        Vector3 pointBelow = rbList[i].transform.position + (Vector3.down * depthToCheck);
+        List<RaycastHit> raycastHits = new List<RaycastHit>();
+
+        
+        //depth = transform.position.y - rbList[i].transform.position.y;
+        
+        RaycastHit flotationHit;
+
+        for (float x = -width * 2; x < width * 2; x += distanceBetweenDepthRays)
         {
-            Vector3 underWaterCenterpoint =  CalculateCenterpointOfRigidbody(i);
-            gizPos = underWaterCenterpoint;
-            actualPosition = underWaterCenterpoint;
-            //depth = transform.position.y - tList[i].position.y;
-            
-            #region viscocity
-            ///start raycasting
+            for (float y = -width * 2; y < width * 2; y += distanceBetweenDepthRays)
+            {
+                Vector3 start = pointBelow + (Vector3.left * x) + (Vector3.forward * y);
+                if (debugRays)
+                {
+                    Debug.DrawLine(start, start - new Vector3(0, 10, 0));
+                }
+
+                if (Physics.Raycast(start, Vector3.up, out flotationHit, depthToCheck + width))
+                {                    
+                    if (flotationHit.point.y < gameObject.transform.position.y)
+                    {
+                        if (flotationHit.collider == rbCollider)
+                        {
+                            //raycastHits.Add(flotationHit);
+                            depth = transform.position.y - flotationHit.point.y;
+                            pressure = flotation * (depth / depthStrength) + minFlotation;
+                            rbList[i].AddForceAtPosition(Vector3.up * pressure, flotationHit.point, ForceMode.Force);
+                        }
+
+                        if (debugRays)
+                        {
+                            Debug.DrawRay(start, Vector3.up * flotationHit.distance, Color.cyan);
+                        }
+                    }
+                }
+                else
+                {
+                    if (debugRays)
+                    {
+                        Debug.DrawRay(start, Vector3.up, Color.yellow);
+                    }
+                }
+
+            }
+        }
+
+        //pressure = pressure / raycastHits.Count;
+
+        foreach(RaycastHit hit in raycastHits)
+        {
+            //rbList[i].AddForceAtPosition(Vector3.up * pressure, hit.point, ForceMode.Force);
+        }
+
+
+    }
+
+    private void ApplyViscocity(int i)
+    {
+        Vector3 underWaterCenterpoint = CalculateCenterpointOfRigidbody(i);
+        ///start raycasting
+        ///
+        if (viscocityRayMethod)
+        {
             Vector3 v1 = Vector3.Cross(rbList[i].velocity, Vector3.up);
             Vector3 v2 = Vector3.Cross(rbList[i].velocity, v1);
             Vector3 pointOutFront = rbList[i].GetComponent<Transform>().position + (rbList[i].velocity.normalized * 40);
@@ -168,18 +241,19 @@ public class Water : MonoBehaviour {
                 Debug.DrawLine(pointOutFront, -v2.normalized * width + pointOutFront, Color.green);
             }
 
-
-
-
             RaycastHit hit;
-            for (float x = -width; x < width; x += distanceBetweenRays)
+            for (float x = -width; x < width; x += distanceBetweenViscocityRays)
             {
-                for (float y = -width; y < width; y += distanceBetweenRays)
+                for (float y = -width; y < width; y += distanceBetweenViscocityRays)
                 {
                     Vector3 start = pointOutFront + (v1.normalized * x) + (v2.normalized * y);
+
+
                     if (Physics.Raycast(start, -rbList[i].velocity.normalized, out hit, 40))
                     {
                         rbList[i].AddForceAtPosition(rbList[i].GetPointVelocity(hit.point) * -1 * viscocity, hit.point, ForceMode.Force);
+
+
                         if (debugRays)
                         {
                             Debug.DrawRay(start, -rbList[i].velocity.normalized * hit.distance, Color.red);
@@ -195,79 +269,10 @@ public class Water : MonoBehaviour {
                     }
                 }
             }
-            #endregion
-
-
-            Vector3 v3 = Vector3.Cross(rbList[i].velocity, Vector3.up);
-            Vector3 v4 = Vector3.Cross(rbList[i].velocity, v3);
-
-            //Vector3 pointBelow = underWaterCenterpoint - new Vector3(0, depthToCheck, 0);
-            Vector3 pointBelow = rbList[i].transform.position + (Vector3.down * depthToCheck);
-
-        #region flotation/bouyancy
-            depth = transform.position.y - underWaterCenterpoint.y;
-            pressure = flotation * (depth / depthStrength) + minFlotation;
-            RaycastHit flotationHit;            
-
-            for (float x = -width*2; x < width*2; x += distanceBetweenRays)
-            {
-                for (float y = -width*2; y < width*2; y += distanceBetweenRays)
-                {
-                    Vector3 start = pointBelow + (Vector3.left * x) + (Vector3.forward * y);
-                    if (debugRays)
-                    {
-                        Debug.DrawLine(start, start - new Vector3(0,10,0));
-                    }
-
-                    if (Physics.Raycast(start, Vector3.up, out flotationHit, depthToCheck + width))
-                    {
-                        if (flotationHit.point.y < gameObject.transform.position.y)
-                        {
-                            rbList[i].AddForceAtPosition(Vector3.up * pressure, flotationHit.point, ForceMode.Force);
-
-                            if (debugRays)
-                            {
-                                Debug.DrawRay(start, Vector3.up * flotationHit.distance, Color.cyan);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (debugRays)
-                        {
-                            Debug.DrawRay(start, Vector3.up, Color.yellow);
-                        }
-                    }
-                    
-                }
-            }
-            #endregion
-
-            visPressure = viscocity * (depth / depthStrength);
-            //debug.Logs in fixed update kills performance
-            //Debug.Log("depth= " + depth);
-            //Debug.Log("pressure = " + pressure);
-
-            //Flotation: pushes object up out of water
-            //rb.AddForce(Vector3.up * flotation);
-
-            //latest velocity before test:
-            //rbList[i].AddForceAtPosition(Vector3.up * pressure, underWaterCenterpoint, ForceMode.Impulse);
-
-            
-            
-
-            //Drag: adds force in opposite direction of travel at the level of viscocity
-            //rb.AddForceAtPosition(rb.velocity *-1 * viscocity, forcePos);
-
-
-            //this was viscosity, now it's done with rays;
-            //rbList[i].AddForceAtPosition(rbList[i].GetPointVelocity(underWaterCenterpoint) * -1 * viscocity, underWaterCenterpoint, ForceMode.Impulse);
-            //rbList[i].AddTorque(rbList[i].angularVelocity * -1 * viscocity, underWaterCenterpoint, ForceMode.Impulse);
-            actualVelocity= rbList[i].velocity;
-
-            //For Debugging
-            //viscocitySize = rbList[i].velocity * -1 * visPressure * 10;
+        }
+        else
+        {
+            rbList[i].AddForceAtPosition(rbList[i].velocity * -1 * viscocity, underWaterCenterpoint, ForceMode.Force);
         }
     }
 }
