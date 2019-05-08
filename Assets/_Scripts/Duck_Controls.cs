@@ -26,18 +26,23 @@ public class Duck_Controls : MonoBehaviour {
             rb.AddForce(rb.transform.forward * speed);
             frontCollider.SetActive(true);
         }
-        else {
+        if(!Input.GetKey(KeyCode.UpArrow)) {
             frontCollider.SetActive(false);
-            rb.AddForce(-rb.velocity * brakingSpeed);
+            rb.AddForce(rb.velocity * -1* brakingSpeed);
         }
         if (Input.GetKey(KeyCode.LeftArrow))
         {
             rb.AddRelativeTorque(Vector3.up * -rotationSpeed);
         }
-        if(!Input.GetKey(KeyCode.LeftArrow) && !Input.GetKey(KeyCode.RightArrow))
+        if(!Input.GetKey(KeyCode.LeftArrow) )
         {
             
-            rb.AddRelativeTorque(-rb.angularVelocity * brakingSpeed);
+            rb.AddRelativeTorque(rb.angularVelocity *-1* brakingSpeed);
+        }
+        if (!Input.GetKey(KeyCode.RightArrow))
+        {
+
+            rb.AddRelativeTorque(rb.angularVelocity *-1* brakingSpeed);
         }
 
         if (Input.GetKey(KeyCode.RightArrow))
@@ -46,13 +51,16 @@ public class Duck_Controls : MonoBehaviour {
         }
         else
         {
-            if (rb.angularVelocity.y < 0)
-                rb.AddRelativeTorque(-rotationSpeed * Vector3.up);
+            //if (rb.angularVelocity.z > 0)
+              //  rb.AddRelativeTorque(-rotationSpeed * Vector3.up);
         }
 
         if (Input.GetKey(KeyCode.DownArrow)){
             rb.AddRelativeTorque(rb.transform.right * backSpeed);
         }
+
+
+        //rb.velocity.Set(Mathf.Lerp(0, ForceMode.Force);
         
 	}
 }
