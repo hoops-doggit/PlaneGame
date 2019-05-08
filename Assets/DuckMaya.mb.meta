@@ -26,6 +26,8 @@ ModelImporter:
     100040: transform1
     100042: transform2
     100044: transform3
+    100046: joint8
+    100048: joint9
     400000: //RootNode
     400002: pCube1
     400004: pCube2
@@ -49,6 +51,8 @@ ModelImporter:
     400040: transform1
     400042: transform2
     400044: transform3
+    400046: joint8
+    400048: joint9
     2000000: persp1
     2100000: Body1
     2100002: Body2
