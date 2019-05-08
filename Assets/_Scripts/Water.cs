@@ -153,7 +153,11 @@ public class Water : MonoBehaviour {
         {            
 
             Collider rbCollider = rbList[i].GetComponent<Collider>();
-            ApplyViscocity(i);
+            if (rbCollider.GetComponent<FloatyObject>())
+            {
+                ApplyViscocity(i);
+            }
+
             ApplyFlotation(i, rbCollider);
 
             //visPressure = viscocity * (depth / depthStrength);
