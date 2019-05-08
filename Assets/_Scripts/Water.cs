@@ -177,9 +177,9 @@ public class Water : MonoBehaviour {
         
         RaycastHit flotationHit;
 
-        for (float x = -width * 2; x < width * 2; x += distanceBetweenDepthRays)
+        for (float x = -width * 2; x <= width * 2; x += distanceBetweenDepthRays)
         {
-            for (float y = -width * 2; y < width * 2; y += distanceBetweenDepthRays)
+            for (float y = -width * 2; y <= width * 2; y += distanceBetweenDepthRays)
             {
                 Vector3 start = pointBelow + (Vector3.left * x) + (Vector3.forward * y);
                 if (debugRays)
@@ -246,9 +246,9 @@ public class Water : MonoBehaviour {
             }
 
             RaycastHit hit;
-            for (float x = -width; x < width; x += distanceBetweenViscocityRays)
+            for (float x = -width; x <= width; x += distanceBetweenViscocityRays)
             {
-                for (float y = -width; y < width; y += distanceBetweenViscocityRays)
+                for (float y = -width; y <= width; y += distanceBetweenViscocityRays)
                 {
                     Vector3 start = pointOutFront + (v1.normalized * x) + (v2.normalized * y);
 
