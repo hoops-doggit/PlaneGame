@@ -7,10 +7,11 @@ public class Water : MonoBehaviour {
     public bool debugRays;
     public bool viscocityRayMethod;
     [Header("Water Stats")]
+    public float rayCountModifierValue;
     public float flotation;
     public float minFlotation;
     public float viscocity;
-    public float depthStrength;
+    public float depthFalloff;
     public float minHeight;
     public float width;
     public float depthToCheck;
@@ -150,31 +151,22 @@ public class Water : MonoBehaviour {
     private void FixedUpdate()
     {
         for(int i = 0; i < rbList.Count; i++)
-        {            
-
+        {
             Collider rbCollider = rbList[i].GetComponent<Collider>();
             if (rbCollider.GetComponent<FloatyObject>())
             {
                 ApplyViscocity(i);
             }
-
             ApplyFlotation(i, rbCollider);
-
-            //visPressure = viscocity * (depth / depthStrength);
-            //actualVelocity = rbList[i].velocity;
-
-
         }
-    }
+    }   
+
 
     private void ApplyFlotation(int i, Collider rbCollider)
     {
         Vector3 pointBelow = rbList[i].transform.position + (Vector3.down * depthToCheck);
         List<RaycastHit> raycastHits = new List<RaycastHit>();
 
-        
-        //depth = transform.position.y - rbList[i].transform.position.y;
-        
         RaycastHit flotationHit;
 
         for (float x = -width * 2; x <= width * 2; x += distanceBetweenDepthRays)
@@ -188,15 +180,12 @@ public class Water : MonoBehaviour {
                 }
 
                 if (Physics.Raycast(start, Vector3.up, out flotationHit, depthToCheck + width))
-                {                    
+                {
                     if (flotationHit.point.y < gameObject.transform.position.y)
                     {
                         if (flotationHit.collider == rbCollider)
                         {
-                            //raycastHits.Add(flotationHit);
-                            depth = transform.position.y - flotationHit.point.y;
-                            pressure = flotation * (depth / depthStrength) + minFlotation;
-                            rbList[i].AddForceAtPosition(Vector3.up * pressure, flotationHit.point, ForceMode.Force);
+                            raycastHits.Add(flotationHit);
                         }
 
                         if (debugRays)
@@ -212,17 +201,15 @@ public class Water : MonoBehaviour {
                         Debug.DrawRay(start, Vector3.up, Color.yellow);
                     }
                 }
-
             }
         }
 
-        //pressure = pressure / raycastHits.Count;
-
-        foreach(RaycastHit hit in raycastHits)
+        foreach (RaycastHit x in raycastHits)
         {
-            //rbList[i].AddForceAtPosition(Vector3.up * pressure, hit.point, ForceMode.Force);
+            depth = transform.position.y - x.point.y;
+            pressure = (flotation * (depth / depthFalloff) + minFlotation) /(raycastHits.Count-1);
+            rbList[i].AddForceAtPosition(Vector3.up * pressure, x.point, ForceMode.Force);
         }
-
 
     }
 
@@ -257,12 +244,10 @@ public class Water : MonoBehaviour {
                     {
                         rbList[i].AddForceAtPosition(rbList[i].GetPointVelocity(hit.point) * -1 * viscocity, hit.point, ForceMode.Force);
 
-
                         if (debugRays)
                         {
                             Debug.DrawRay(start, -rbList[i].velocity.normalized * hit.distance, Color.red);
                         }
-
                     }
                     else
                     {
