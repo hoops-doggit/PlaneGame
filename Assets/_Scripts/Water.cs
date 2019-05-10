@@ -19,6 +19,8 @@ public class Water : MonoBehaviour {
     public float distanceBetweenViscocityRays;
     public Vector3 actualPosition;
     public Vector3 actualVelocity;
+    public Vector3 underwaterCentrePoint;
+    private List<RaycastHit> raycastHits;
     
     
 
@@ -131,9 +133,17 @@ public class Water : MonoBehaviour {
             z += v3.z;
         }
         Vector3 result = new Vector3(x / insideMeLength, y / insideMeLength, z / insideMeLength);
-        //GameObject clone = Instantiate(visualiser, result, Quaternion.identity, gameObject.transform);
-        //clone.transform.parent = null;
-        //clone.transform.localScale = Vector3.one * visualiserSize;
+        return result;
+    }
+
+    private Vector3 RigidBodyUnderWaterCenterPoint(List<RaycastHit> r)
+    {
+        Vector3 tempVec = Vector3.zero;
+        foreach(RaycastHit rh in r)
+        {
+            tempVec += rh.point;
+        }
+        Vector3 result = tempVec / r.Count;
         return result;
     }
 
@@ -153,11 +163,12 @@ public class Water : MonoBehaviour {
         for(int i = 0; i < rbList.Count; i++)
         {
             Collider rbCollider = rbList[i].GetComponent<Collider>();
+            
+            ApplyFlotation(i, rbCollider);
             if (rbCollider.GetComponent<FloatyObject>())
             {
                 ApplyViscocity(i);
             }
-            ApplyFlotation(i, rbCollider);
         }
     }   
 
@@ -204,18 +215,22 @@ public class Water : MonoBehaviour {
             }
         }
 
-        foreach (RaycastHit x in raycastHits)
-        {
-            depth = transform.position.y - x.point.y;
-            pressure = (flotation * (depth / depthFalloff) + minFlotation) /(raycastHits.Count-1);
-            rbList[i].AddForceAtPosition(Vector3.up * pressure, x.point, ForceMode.Force);
-        }
+        //foreach (RaycastHit x in raycastHits)
+        //{
+        //    depth = transform.position.y - x.point.y;
+        //    //pressure = (flotation * (depth / depthFalloff) + minFlotation) /(raycastHits.Count);
+        //    pressure = flotation * (depth / depthFalloff) + minFlotation;
+        //    rbList[i].AddForceAtPosition(Vector3.up * pressure, underwaterCentrePoint, ForceMode.Force);
+        //}
+        underwaterCentrePoint = RigidBodyUnderWaterCenterPoint(raycastHits);
+        depth = transform.position.y - underwaterCentrePoint.y;
+        pressure = flotation * (depth / depthFalloff) + minFlotation;
+        rbList[i].AddForceAtPosition(Vector3.up * pressure, underwaterCentrePoint, ForceMode.Force);
 
     }
 
     private void ApplyViscocity(int i)
     {
-        Vector3 underWaterCenterpoint = CalculateCenterpointOfRigidbody(i);
         ///start raycasting
         ///
         if (viscocityRayMethod)
@@ -261,7 +276,7 @@ public class Water : MonoBehaviour {
         }
         else
         {
-            rbList[i].AddForceAtPosition(rbList[i].velocity * -1 * viscocity, underWaterCenterpoint, ForceMode.Force);
+            rbList[i].AddForceAtPosition(rbList[i].velocity * -1 * viscocity, underwaterCentrePoint, ForceMode.Force);
         }
     }
 }
