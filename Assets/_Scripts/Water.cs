@@ -72,8 +72,6 @@ public class Water : MonoBehaviour {
         if (other.GetComponent<FloatyObject>())
         {
             rbList.Add(other.GetComponent<Rigidbody>());
-            foList.Add(other.GetComponent<FloatyObject>());
-            tList.Add(other.transform);
         }
     }
 
@@ -84,150 +82,31 @@ public class Water : MonoBehaviour {
         if(other.GetComponent<FloatyObject>())
         {
             rbList.Remove(other.GetComponent<Rigidbody>());
-            foList.Remove(other.GetComponent<FloatyObject>());
-            tList.Remove(other.transform);
         }
     }
-
-    private Vector3 CalculateCenterpointOfRigidbody(int zx)
-    {
-        //Debug.Log("Doing calsdkfja;sldfkj;aljfd");
-
-        //get this to return a vector3 at world pos
-
-        Rigidbody rb = rbList[zx];
-        FloatyObject fo = foList[zx];
-        Transform t = tList[zx];
-
-        //add all x values
-        v3List.Clear();
-        insideme.Clear();
-
-        x = 0;
-        y = 0;
-        z = 0;
-        insideMeLength = 0;
-
-        for(int i = 0; i < fo.points.Count; i++)
-        {
-            v3List.Add(fo.points[i].position);
-        }
-        for (int i = 0; i < v3List.Count; i++)
-        {
-            if (self.bounds.Contains(v3List[i]))
-            {
-                insideme.Add(v3List[i]);
-                //instantiates a shere 
-                //GameObject vis = Instantiate(visualiser, v3List[i], Quaternion.identity, gameObject.transform);
-                //vis.transform.SetParent(null);
-                //vis.transform.localScale = new Vector3(1, 1, 1);
-            }
-        }
-        insideMeLength = insideme.Count;
-
-        //get length of list
-        foreach (Vector3 v3 in insideme)
-        {
-            x += v3.x;
-            y += v3.y;
-            z += v3.z;
-        }
-        Vector3 result = new Vector3(x / insideMeLength, y / insideMeLength, z / insideMeLength);
-        return result;
-    }
-
-    private Vector3 RigidBodyUnderWaterCenterPoint(List<RaycastHit> r)
-    {
-        Vector3 tempVec = Vector3.zero;
-        foreach(RaycastHit rh in r)
-        {
-            tempVec += rh.point;
-        }
-        Vector3 result = tempVec / r.Count;
-        return result;
-    }
-
-    private void OnDrawGizmos()
-    {
-        Gizmos.color = currentCenterPointCol;
-        //Gizmos.DrawSphere(gizPos, gizSize);
-        Gizmos.color = viscocityColour;
-        //Gizmos.DrawCube(new Vector3(gizPos.x, gizPos.y + (viscocitySize.y/2),gizPos.z), viscocitySize);
-        //Gizmos.DrawLine(new Vector3(gizPos.x, gizPos.y, gizPos.z), viscocitySize);        
-    }
-
 
 
     private void FixedUpdate()
     {
         for(int i = 0; i < rbList.Count; i++)
         {
-            Collider rbCollider = rbList[i].GetComponent<Collider>();
+            Rigidbody rb = rbList[i].GetComponent<Rigidbody>();
+            Collider rbCollider = rb.GetComponent<Collider>();
             
-            ApplyFlotation(i, rbCollider);
-            if (rbCollider.GetComponent<FloatyObject>())
+            
+            if (rb.GetComponent<FloatyObject>())
             {
-                ApplyViscocity(i);
+                FloatyObject fo = rb.GetComponent<FloatyObject>();
+                ApplyCustomViscocity(rb, fo);
+                ApplyCustomFlotation(rbCollider, rb, fo);
+            }
+            else
+            {
+                //ApplyViscocity(i);
+                //ApplyFlotation(rbCollider, rb);
             }
         }
     }   
-
-
-    private void ApplyFlotation(int i, Collider rbCollider)
-    {
-        Vector3 pointBelow = rbList[i].transform.position + (Vector3.down * depthToCheck);
-        List<RaycastHit> raycastHits = new List<RaycastHit>();
-
-        RaycastHit flotationHit;
-
-        for (float x = -width * 2; x <= width * 2; x += distanceBetweenDepthRays)
-        {
-            for (float y = -width * 2; y <= width * 2; y += distanceBetweenDepthRays)
-            {
-                Vector3 start = pointBelow + (Vector3.left * x) + (Vector3.forward * y);
-                if (debugRays)
-                {
-                    Debug.DrawLine(start, start - new Vector3(0, 10, 0));
-                }
-
-                if (Physics.Raycast(start, Vector3.up, out flotationHit, depthToCheck + width))
-                {
-                    if (flotationHit.point.y < gameObject.transform.position.y)
-                    {
-                        if (flotationHit.collider == rbCollider)
-                        {
-                            raycastHits.Add(flotationHit);
-                        }
-
-                        if (debugRays)
-                        {
-                            Debug.DrawRay(start, Vector3.up * flotationHit.distance, Color.cyan);
-                        }
-                    }
-                }
-                else
-                {
-                    if (debugRays)
-                    {
-                        Debug.DrawRay(start, Vector3.up, Color.yellow);
-                    }
-                }
-            }
-        }
-
-        //foreach (RaycastHit x in raycastHits)
-        //{
-        //    depth = transform.position.y - x.point.y;
-        //    //pressure = (flotation * (depth / depthFalloff) + minFlotation) /(raycastHits.Count);
-        //    pressure = flotation * (depth / depthFalloff) + minFlotation;
-        //    rbList[i].AddForceAtPosition(Vector3.up * pressure, underwaterCentrePoint, ForceMode.Force);
-        //}
-        underwaterCentrePoint = RigidBodyUnderWaterCenterPoint(raycastHits);
-        depth = transform.position.y - underwaterCentrePoint.y;
-        pressure = flotation * (depth / depthFalloff) + minFlotation;
-        rbList[i].AddForceAtPosition(Vector3.up * pressure, underwaterCentrePoint, ForceMode.Force);
-
-    }
 
     private void ApplyViscocity(int i)
     {
@@ -279,4 +158,146 @@ public class Water : MonoBehaviour {
             rbList[i].AddForceAtPosition(rbList[i].velocity * -1 * viscocity, underwaterCentrePoint, ForceMode.Force);
         }
     }
+
+    private void ApplyCustomViscocity(Rigidbody rb, FloatyObject fo)
+    {
+        ///start raycasting
+        ///
+        if (viscocityRayMethod)
+        {
+            Vector3 v1 = Vector3.Cross(rb.velocity, Vector3.up);
+            Vector3 v2 = Vector3.Cross(rb.velocity, v1);
+            Vector3 pointOutFront = rb.GetComponent<Transform>().position + (rb.velocity.normalized * 40);
+
+            if (debugRays)
+            {
+                Debug.DrawLine(pointOutFront, v1.normalized * width + pointOutFront, Color.blue);
+                Debug.DrawLine(pointOutFront, -v1.normalized * width + pointOutFront, Color.blue);
+                Debug.DrawLine(pointOutFront, v2.normalized * width + pointOutFront, Color.green);
+                Debug.DrawLine(pointOutFront, -v2.normalized * width + pointOutFront, Color.green);
+            }
+
+            RaycastHit hit;
+            for (float x = -width; x <= width; x += distanceBetweenViscocityRays)
+            {
+                for (float y = -width; y <= width; y += distanceBetweenViscocityRays)
+                {
+                    Vector3 start = pointOutFront + (v1.normalized * x) + (v2.normalized * y);
+
+
+                    if (Physics.Raycast(start, -rb.velocity.normalized, out hit, 40))
+                    {
+                        rb.AddForceAtPosition(rb.GetPointVelocity(hit.point) * -1 * viscocity * fo.waterLineOffset, hit.point, ForceMode.Force);
+
+                        if (debugRays)
+                        {
+                            Debug.DrawRay(start, -rb.velocity.normalized * hit.distance, Color.red);
+                        }
+                    }
+                    else
+                    {
+                        if (debugRays)
+                        {
+                            Debug.DrawRay(start, -rb.velocity.normalized, Color.yellow);
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            //rb.AddForceAtPosition(rb.velocity * -1 * viscocity, underwaterCentrePoint, ForceMode.Force);
+        }
+    }
+
+    private void ApplyCustomFlotation(Collider rbCollider, Rigidbody rb, FloatyObject fo)
+    {
+        Vector3 pointBelow = rb.transform.position + (Vector3.down * depthToCheck);
+
+        RaycastHit flotationHit;
+
+        for (float x = -width * 2; x <= width * 2; x += distanceBetweenDepthRays)
+        {
+            for (float y = -width * 2; y <= width * 2; y += distanceBetweenDepthRays)
+            {
+                Vector3 start = pointBelow + (Vector3.left * x) + (Vector3.forward * y);
+                if (debugRays)
+                {
+                    Debug.DrawLine(start, start - new Vector3(0, 10, 0));
+                }
+
+                if (Physics.Raycast(start, Vector3.up, out flotationHit, depthToCheck + width))
+                {
+                    if (flotationHit.point.y < gameObject.transform.position.y)
+                    {
+                        if (flotationHit.collider == rbCollider)
+                        {
+                            depth = transform.position.y - flotationHit.point.y;
+                            pressure = (flotation *((depth / depthFalloff) )  + minFlotation) * fo.waterLineOffset;
+                            rb.AddForceAtPosition(Vector3.up * pressure, flotationHit.point, ForceMode.Force);
+                        }
+
+                        if (debugRays)
+                        {
+                            Debug.DrawRay(start, Vector3.up * flotationHit.distance, Color.cyan);
+                        }
+                    }
+                }
+                else
+                {
+                    if (debugRays)
+                    {
+                        Debug.DrawRay(start, Vector3.up, Color.yellow);
+                    }
+                }
+            }
+        }
+    }
+
+    private void ApplyFlotation(Collider rbCollider, Rigidbody rb)
+    {
+        Vector3 pointBelow = rb.transform.position + (Vector3.down * depthToCheck);
+        List<RaycastHit> raycastHits = new List<RaycastHit>();
+
+        RaycastHit flotationHit;
+
+        for (float x = -width * 2; x <= width * 2; x += distanceBetweenDepthRays)
+        {
+            for (float y = -width * 2; y <= width * 2; y += distanceBetweenDepthRays)
+            {
+                Vector3 start = pointBelow + (Vector3.left * x) + (Vector3.forward * y);
+                if (debugRays)
+                {
+                    Debug.DrawLine(start, start - new Vector3(0, 10, 0));
+                }
+
+                if (Physics.Raycast(start, Vector3.up, out flotationHit, depthToCheck + width))
+                {
+                    if (flotationHit.point.y < gameObject.transform.position.y)
+                    {
+                        if (flotationHit.collider == rbCollider)
+                        {
+                            depth = transform.position.y - flotationHit.point.y;
+                            pressure = flotation * (depth / depthFalloff) + minFlotation;
+                            rb.AddForceAtPosition(Vector3.up * pressure, flotationHit.point, ForceMode.Force);
+                        }
+
+                        if (debugRays)
+                        {
+                            Debug.DrawRay(start, Vector3.up * flotationHit.distance, Color.cyan);
+                        }
+                    }
+                }
+                else
+                {
+                    if (debugRays)
+                    {
+                        Debug.DrawRay(start, Vector3.up, Color.yellow);
+                    }
+                }
+            }
+        }
+    }
+
+    
 }
