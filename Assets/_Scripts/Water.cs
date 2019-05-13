@@ -18,12 +18,8 @@ public class Water : MonoBehaviour {
     public float distanceBetweenDepthRays;
     public float distanceBetweenViscocityRays;
     public Vector3 actualPosition;
-    public Vector3 actualVelocity;
-    public Vector3 underwaterCentrePoint;
-    private List<RaycastHit> raycastHits;
+    public Vector3 actualVelocity;  
     
-    
-
     [SerializeField]
     private float pressure;
     [SerializeField]
@@ -34,32 +30,10 @@ public class Water : MonoBehaviour {
     [SerializeField]
     private List<Rigidbody> rbList = new List<Rigidbody>();
     [SerializeField]
-    private List<FloatyObject> foList = new List<FloatyObject>();
-    [SerializeField]
-    private List<Transform> tList = new List<Transform>();
-    [SerializeField]
-    private List<Vector3> v3List = new List<Vector3>();
-    [SerializeField]
-    private List<Vector3> insideme = new List<Vector3>();
+    private List<Rigidbody> rbFloatyList = new List<Rigidbody>();
     private Vector3 size;
 
-    public float x;
-    public float y;
-    public float z;
-    public float insideMeLength;
-
-
-    public GameObject visualiser;
-    public float visualiserSize;
-
     private BoxCollider self;
-
-    [Header("For Drawing Gizmos")]
-    public Color currentCenterPointCol = new Color(0, 0, 1, 0.5f);
-    private Vector3 gizPos = new Vector3(0, 0, 0);
-    public float gizSize;
-    public Color viscocityColour;
-    public Vector3 viscocitySize;
 
     private void Start()
     {
@@ -71,52 +45,58 @@ public class Water : MonoBehaviour {
     {
         if (other.GetComponent<FloatyObject>())
         {
+            rbFloatyList.Add(other.GetComponent<Rigidbody>());
+        }
+        else
+        {
             rbList.Add(other.GetComponent<Rigidbody>());
         }
     }
 
     private void OnTriggerExit(Collider other)
     {
-        //other.GetComponent<Rigidbody>().ResetCenterOfMass();
-
         if(other.GetComponent<FloatyObject>())
+        {
+            rbFloatyList.Remove(other.GetComponent<Rigidbody>());
+        }
+        else
         {
             rbList.Remove(other.GetComponent<Rigidbody>());
         }
     }
 
-
     private void FixedUpdate()
     {
-        for(int i = 0; i < rbList.Count; i++)
+        if (rbFloatyList.Count > 0)
         {
-            Rigidbody rb = rbList[i].GetComponent<Rigidbody>();
-            Collider rbCollider = rb.GetComponent<Collider>();
-            
-            
-            if (rb.GetComponent<FloatyObject>())
+            for (int i = 0; i < rbFloatyList.Count; i++)
             {
+                Rigidbody rb = rbFloatyList[i].GetComponent<Rigidbody>();
                 FloatyObject fo = rb.GetComponent<FloatyObject>();
-                ApplyCustomViscocity(rb, fo);
-                ApplyCustomFlotation(rbCollider, rb, fo);
+                Collider rbCollider = rb.GetComponent<Collider>();
+                ApplyViscocityCustom(rb, fo);
+                ApplyFlotationCustom(rbCollider, rb, fo);
             }
-            else
+        }
+        if (rbList.Count > 0)
+        {
+            for (int i = 0; i < rbList.Count; i++)
             {
-                //ApplyViscocity(i);
-                //ApplyFlotation(rbCollider, rb);
+                Rigidbody rb = rbList[i].GetComponent<Rigidbody>();
+                Collider rbCollider = rb.GetComponent<Collider>();
+                ApplyViscocityGeneric(rb);
+                ApplyFlotationGeneric(rbCollider, rb);
             }
         }
     }   
 
-    private void ApplyViscocity(int i)
+    private void ApplyViscocityGeneric(Rigidbody rb)
     {
-        ///start raycasting
-        ///
         if (viscocityRayMethod)
         {
-            Vector3 v1 = Vector3.Cross(rbList[i].velocity, Vector3.up);
-            Vector3 v2 = Vector3.Cross(rbList[i].velocity, v1);
-            Vector3 pointOutFront = rbList[i].GetComponent<Transform>().position + (rbList[i].velocity.normalized * 40);
+            Vector3 v1 = Vector3.Cross(rb.velocity, Vector3.up);
+            Vector3 v2 = Vector3.Cross(rb.velocity, v1);
+            Vector3 pointOutFront = rb.GetComponent<Transform>().position + (rb.velocity.normalized * 40);
 
             if (debugRays)
             {
@@ -134,35 +114,30 @@ public class Water : MonoBehaviour {
                     Vector3 start = pointOutFront + (v1.normalized * x) + (v2.normalized * y);
 
 
-                    if (Physics.Raycast(start, -rbList[i].velocity.normalized, out hit, 40))
+                    if (Physics.Raycast(start, -rb.velocity.normalized, out hit, 40))
                     {
-                        rbList[i].AddForceAtPosition(rbList[i].GetPointVelocity(hit.point) * -1 * viscocity, hit.point, ForceMode.Force);
+                        rb.AddForceAtPosition(rb.GetPointVelocity(hit.point) * -1 * viscocity, hit.point, ForceMode.Force);
 
                         if (debugRays)
                         {
-                            Debug.DrawRay(start, -rbList[i].velocity.normalized * hit.distance, Color.red);
+                            Debug.DrawRay(start, -rb.velocity.normalized * hit.distance, Color.red);
                         }
                     }
                     else
                     {
                         if (debugRays)
                         {
-                            Debug.DrawRay(start, -rbList[i].velocity.normalized, Color.yellow);
+                            Debug.DrawRay(start, -rb.velocity.normalized, Color.yellow);
                         }
                     }
                 }
             }
         }
-        else
-        {
-            rbList[i].AddForceAtPosition(rbList[i].velocity * -1 * viscocity, underwaterCentrePoint, ForceMode.Force);
-        }
+
     }
 
-    private void ApplyCustomViscocity(Rigidbody rb, FloatyObject fo)
+    private void ApplyViscocityCustom(Rigidbody rb, FloatyObject fo)
     {
-        ///start raycasting
-        ///
         if (viscocityRayMethod)
         {
             Vector3 v1 = Vector3.Cross(rb.velocity, Vector3.up);
@@ -204,13 +179,9 @@ public class Water : MonoBehaviour {
                 }
             }
         }
-        else
-        {
-            //rb.AddForceAtPosition(rb.velocity * -1 * viscocity, underwaterCentrePoint, ForceMode.Force);
-        }
     }
 
-    private void ApplyCustomFlotation(Collider rbCollider, Rigidbody rb, FloatyObject fo)
+    private void ApplyFlotationCustom(Collider rbCollider, Rigidbody rb, FloatyObject fo)
     {
         Vector3 pointBelow = rb.transform.position + (Vector3.down * depthToCheck);
 
@@ -254,7 +225,7 @@ public class Water : MonoBehaviour {
         }
     }
 
-    private void ApplyFlotation(Collider rbCollider, Rigidbody rb)
+    private void ApplyFlotationGeneric(Collider rbCollider, Rigidbody rb)
     {
         Vector3 pointBelow = rb.transform.position + (Vector3.down * depthToCheck);
         List<RaycastHit> raycastHits = new List<RaycastHit>();
